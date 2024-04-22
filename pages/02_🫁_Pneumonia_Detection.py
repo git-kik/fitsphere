@@ -1,3 +1,6 @@
+import os
+from datetime import datetime
+import sqlite3
 import config as cfg
 import streamlit as st
 import torch
@@ -7,6 +10,17 @@ from config import doctor_search
 from PIL import Image
 from torchvision import transforms
 
+# Connect to SQLite database
+conn = sqlite3.connect('predictions.db')
+c = conn.cursor()
+
+# Create predictions table if it doesn't exist
+c.execute('''CREATE TABLE IF NOT EXISTS predictions
+             (id INTEGER PRIMARY KEY AUTOINCREMENT,
+              image_path TEXT,
+              prediction INTEGER,
+              confidence REAL)''')
+conn.commit()
 
 def preprocess_image(image):
     transform = transforms.Compose(
@@ -20,6 +34,26 @@ def preprocess_image(image):
     image = transform(image).float()
     return image
 
+# Function to save uploaded image and return its filename
+def save_uploaded_image(uploaded_image):
+    # Create a directory to save uploaded images if it doesn't exist
+    if not os.path.exists("uploaded_images"):
+        os.makedirs("uploaded_images")
+
+    # Generate a unique filename based on the current timestamp
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    filename = f"uploaded_images/{timestamp}.png"
+
+    # Save the uploaded image to the specified filename
+    with open(filename, "wb") as f:
+        f.write(uploaded_image.read())
+
+    return filename
+
+# Function to save prediction and confidence to the database
+def save_prediction_to_database(image_filename, prediction, confidence):
+    c.execute("INSERT INTO predictions (image_path, prediction, confidence) VALUES (?, ?, ?)", (image_filename, prediction.item(), confidence.item()))
+    conn.commit()
 
 class PneumoniaModel(nn.Module):
     def __init__(self):
@@ -86,7 +120,14 @@ def app():
 
         pred_button = st.button("Predict")
         if pred_button:
+            # Save uploaded image
+            image_filename = save_uploaded_image(uploaded_image)
+            
             prediction, confidence = predict(uploaded_image)
+            
+            # Save prediction and confidence to database
+            save_prediction_to_database(image_filename, prediction, confidence)
+            
             print(prediction)
             if prediction == 0:
                 st.subheader("The patient is not suffering from Pneumonia 😄🎉🎉")
