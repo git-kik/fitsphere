@@ -1,9 +1,77 @@
 import config as cfg
 import joblib
+import pandas as pd
 import numpy as np
+import csv
 import streamlit as st
 from config import doctor_search
 
+
+def save_to_csv(inputs, prediction):
+    with open('diabetes_data.csv', 'a', newline='') as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerow(inputs + [prediction])
+
+# Function to display diabetes data
+def display_diabetes_data():
+    st.subheader("Diabetes Data Recorded")
+    try:
+        # Define column names
+        column_names = [
+            'Age', 'Gender', 'Polyuria', 'Polydipsia', 'Weight',
+            'Weakness', 'Polyphagia', 'Genital thrush', 'Visual blurring',
+            'Itching', 'Irritability', 'Delayed healing', 'Partial paresis',
+            'Muscle stiffness', 'Alopecia', 'Obesity', 'Prediction'
+        ]
+        # Read CSV with specified column names
+        df = pd.read_csv('diabetes_data.csv', names=column_names)
+        st.write(df)
+
+        # Additional functionality to delete or retrieve specific records
+        action = st.radio("Choose Action:", ("Delete Record", "Retrieve Record"))
+
+        if action == "Delete Record":
+            # Get user input for record to delete
+            record_id = st.text_input("Enter Record ID to Delete")
+            if st.button("Delete"):
+                delete_record_from_csv(record_id)
+
+        elif action == "Retrieve Record":
+            # Get user input for record to retrieve
+            record_id = st.text_input("Enter Record ID to Retrieve")
+            if st.button("Retrieve"):
+                retrieved_record = retrieve_record_from_csv(record_id)
+                st.write("Retrieved Record:")
+                st.write(retrieved_record)
+
+    except FileNotFoundError:
+        st.write("No diabetes data recorded yet.")
+# Function to delete record from CSV
+def delete_record_from_csv(record_id):
+    try:
+        # Read CSV file
+        df = pd.read_csv('diabetes_data.csv')
+        
+        # Delete the record with the given record ID
+        df = df.drop([int(record_id)])
+        
+        # Write back to CSV file
+        df.to_csv('diabetes_data.csv', index=False)
+        st.success("Record deleted successfully!")
+    except Exception as e:
+        st.error(f"An error occurred while deleting the record: {e}")
+
+# Function to retrieve record from CSV
+def retrieve_record_from_csv(record_id):
+    try:
+        # Read CSV file
+        df = pd.read_csv('diabetes_data.csv')
+        
+        # Retrieve the record with the given record ID
+        retrieved_record = df.iloc[int(record_id)]
+        return retrieved_record
+    except Exception as e:
+        st.error(f"An error occurred while retrieving the record: {e}")
 
 def predict_early_diabetes(
     age,
@@ -49,7 +117,6 @@ def predict_early_diabetes(
         )
     )
     return prediction
-
 
 def diabetes_app():
     st.set_page_config(
@@ -195,6 +262,9 @@ def diabetes_app():
             alopecia,
             obesity,
         )
+        save_to_csv([age, gender, polyuria, polydipsia, weight, weakness, polyphagia, genital_thrush,
+                 visual_blurring, itching, irritability, delayed_healing, partial_paresis,
+                 muscle_stiffness, alopecia, obesity], result)
         if result == 1:
             st.subheader("The patient have high chances of having Diabetes 😔")
 
@@ -214,6 +284,10 @@ def diabetes_app():
             st.markdown("---")
         else:
             st.subheader("The patient does not have Diabetes 😄")
+
+    display_diabetes_data()
+
+
 
 
 if __name__ == "__main__":
