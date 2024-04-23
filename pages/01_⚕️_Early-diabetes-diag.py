@@ -48,13 +48,16 @@ def delete_last_record_from_csv():
             'Muscle stiffness', 'Alopecia', 'Obesity', 'Prediction'
         ]
         # Read CSV file
-        df = pd.read_csv('diabetes_data.csv',names=column_names)
+        df = pd.read_csv('diabetes_data.csv')
         
         # Delete the last record
         df = df.drop(df.index[-1])
         
         # Write back to CSV file
         df.to_csv('diabetes_data.csv', index=False)
+
+        # Read CSV file
+        df = pd.read_csv('diabetes_data.csv',names=column_names)
 
         return df
     except Exception as e:
