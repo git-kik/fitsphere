@@ -28,50 +28,39 @@ def display_diabetes_data():
         st.write(df)
 
         # Additional functionality to delete or retrieve specific records
-        action = st.radio("Choose Action:", ("Delete Record", "Retrieve Record"))
+        if st.button("Delete Last Record"):
+            df = delete_last_record_from_csv()
+            st.success("Last record deleted successfully!")
 
-        if action == "Delete Record":
-            # Get user input for record to delete
-            record_id = st.text_input("Enter Record ID to Delete")
-            if st.button("Delete"):
-                delete_record_from_csv(record_id)
-
-        elif action == "Retrieve Record":
-            # Get user input for record to retrieve
-            record_id = st.text_input("Enter Record ID to Retrieve")
-            if st.button("Retrieve"):
-                retrieved_record = retrieve_record_from_csv(record_id)
-                st.write("Retrieved Record:")
-                st.write(retrieved_record)
-
+            st.subheader("Updated Diabetes Data Recorded")
+            st.write(df)
     except FileNotFoundError:
         st.write("No diabetes data recorded yet.")
+
+      
 # Function to delete record from CSV
-def delete_record_from_csv(record_id):
+def delete_last_record_from_csv():
     try:
+        column_names = [
+            'Age', 'Gender', 'Polyuria', 'Polydipsia', 'Weight',
+            'Weakness', 'Polyphagia', 'Genital thrush', 'Visual blurring',
+            'Itching', 'Irritability', 'Delayed healing', 'Partial paresis',
+            'Muscle stiffness', 'Alopecia', 'Obesity', 'Prediction'
+        ]
         # Read CSV file
-        df = pd.read_csv('diabetes_data.csv')
+        df = pd.read_csv('diabetes_data.csv',names=column_names)
         
-        # Delete the record with the given record ID
-        df = df.drop([int(record_id)])
+        # Delete the last record
+        df = df.drop(df.index[-1])
         
         # Write back to CSV file
         df.to_csv('diabetes_data.csv', index=False)
-        st.success("Record deleted successfully!")
-    except Exception as e:
-        st.error(f"An error occurred while deleting the record: {e}")
 
-# Function to retrieve record from CSV
-def retrieve_record_from_csv(record_id):
-    try:
-        # Read CSV file
-        df = pd.read_csv('diabetes_data.csv')
-        
-        # Retrieve the record with the given record ID
-        retrieved_record = df.iloc[int(record_id)]
-        return retrieved_record
+        return df
     except Exception as e:
-        st.error(f"An error occurred while retrieving the record: {e}")
+        st.error(f"An error occurred while deleting the last record: {e}")
+
+
 
 def predict_early_diabetes(
     age,
